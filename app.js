@@ -15,8 +15,8 @@ var bot = controller.spawn({
 }).startRTM();
 
 // create lean talk
-controller.hears(['create new lean event (.*)', 'create new lean topic (.*)'],'direct_message,direct_mention,mention', function(bot, message) 
-    let topic = message.match[1];
+controller.hears(['create new lean event (.*)', 'create new lean topic (.*)'],'direct_message,direct_mention,mention', function(bot, message) {
+    let topic = message.match[1]
 });
 
 // add ideas to lean talk
