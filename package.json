@@ -17,6 +17,8 @@
   },
   "homepage": "https://github.com/ohmyjersh/leanbot#readme",
   "dependencies": {
-    "botkit": "^0.1.1"
+    "botkit": "^0.1.1",
+    "moment": "^2.13.0",
+    "nedb": "^1.8.0"
   }
 }
