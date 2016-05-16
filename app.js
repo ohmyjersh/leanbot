@@ -1,9 +1,8 @@
-'use strict';
+"use strict";
 
 if (!process.env.token){
-        // for debugging process.env.token = ;
     console.log('Error: Specify token for environment');
-}
+};
 
 const Botkit = require('botkit');
 const os = require('os');
@@ -20,55 +19,73 @@ var bot = controller.spawn({
 
 // create lean talk with agenda
 controller.hears(['create lean coffee on (.*) with agenda (.*)'],'direct_message,direct_mention,mention', function(bot, message) {
-    let date = message.match[1];
-    let agenda = message.match[2];
+    let date = message.match[1].trim();
+    let agenda = message.match[2].trim();
     if(!validDate(date))
         return bot.reply(message,"That's not a valid date, reformat to 12/12/2099");
     if(agenda.length > 140)
-        return bot.reply(message,"That's a long agenda, please shorten it.")
+        return bot.reply(message,"That's a long agenda, please shorten it.");
+    // check if agenda already exists
     var event = 
     {
         agenda:agenda,
-        topics:[],
+        user:message.user,
+        type: 'agenda',
         date: moment().format(date),
     };
     db.insert(event, function (err, newDoc) {
            if(err)
                 return bot.reply(message, 'uh Oh something went wrong.');
            return bot.reply(message, 'Created lean coffee with id: ' + newDoc._id 
-           + 'with agenda '+ newDoc.agenda 
+           + ' with agenda '+ newDoc.agenda 
            + ' for: ' + newDoc.date);
     });
 });
 
 // add topic for lean coffee
-controller.hears(['for (.*) add new idea (.*)'],'direct_message,direct_mention,mention', function(bot, message) {
-    let id = message.match[1];
-    let topic = message.match[2];
+controller.hears(['for agenda (.*) add new topic (.*)'],'direct_message,direct_mention,mention', function(bot, message) {
+    let agendaId = message.match[1].trim();
+    let topic = message.match[2].trim();
     
-    if(!validDate(date))
-        return bot.reply(message,"That's not a valid date, reformat to 12/12/2099");
     if(topic.length > 140)
-        return bot.reply(message,"That's a long topic, please shorten it.")
+        return bot.reply(message,"That's a long topic, please shorten it.");
+     
+    // need to find all topics with the agendaId to make sure it has not already been created.s
         
-    //need to get the agenda by id or agenda ?     
-    var agenda = db.find({_id:id});    
     var newTopic = 
-    {
+    {   agendaId:agendaId,
         topic: topic,
         user: message.user,
+        type: 'topic',
         votes: []
     };
-    agenda.topics.push(newTopic);
-    db.update(newTopic);
+    db.insert(newTopic, function (err, newDoc) {
+           if(err)
+                return bot.reply(message, 'uh Oh something went wrong.');
+           return bot.reply(message, 'Created lean coffee topic with id: ' + newDoc._id 
+           + ' for agenda '+ newDoc.agendaId);
+    });
 });
 
 // vote for ideas for lean talk
-controller.hears(['vote for (.*)'],'direct_message,direct_mention,mention', function(bot, message) {
-    
+controller.hears(['for agenda (.*) vote for topic (.*)'],'direct_message,direct_mention,mention', function(bot, message) {
+    let agendaId = message.match[1].trim();
+    let topicId = message.match[2].trim();
+        
+    //need to get the agenda by id or agenda ?     
+    db.findOne({_id:topicId}, function (err, doc) {
+        if(doc.agendaId != agendaId)
+            return bot.reply(message, 'agenda not found and topic not found');
+        db.update({ _id: doc._id }, { $addToSet: { votes: message.user } }, {}, function (err, result) {
+           if(err)
+                return bot.reply(message, 'uh Oh something went wrong.');
+           if(result == 1)
+                return bot.reply(message, 'Voted!');
+        });
+    });
 });
 
-// list all current topics 
+// list all agendas 
 controller.hears(['list all agendas'],'direct_message,direct_mention,mention', function(bot, message) {
     db.find({}, function (err, docs) {
         console.log(docs);
@@ -117,7 +134,6 @@ controller.hears(['uptime', 'identify yourself', 'who are you', 'what is your na
         bot.reply(message,
             ':robot_face: I am a bot named <@' + bot.identity.name +
              '>. I have been running for ' + uptime + ' on ' + hostname + '.');
-
     });
 
 
