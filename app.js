@@ -26,6 +26,7 @@ controller.hears(['create lean coffee on (.*) with agenda (.*)'],'direct_message
     if(agenda.length > 140)
         return bot.reply(message,"That's a long agenda, please shorten it.");
     // check if agenda already exists
+    
     var event = 
     {
         agenda:agenda,
@@ -98,19 +99,26 @@ controller.hears(['for agenda (.*) vote for topic (.*)'],'direct_message,direct_
 
 // list all agendas 
 controller.hears(['list all agendas'],'direct_message,direct_mention,mention', function(bot, message) {
-    var a = [];
     db.find({ type: 'agenda' }, function (err, docs) {
-        console.log(docs);
-        a = docs;
-    // docs is an array containing documents Mars, Earth, Jupiter
-    // If no document is found, docs is equal to []
+        // should filter the docs instead, to make less shitty.
+        // docs.forEach(function(doc){
+        //    var result = moment(doc.date).isAfter(moment());
+        //    if(moment(doc.date).isAfter(moment()))
+        //     return bot.reply(message, doc.agenda); 
+        //    else {
+        //        return bot.reply(message, 'there is no current agendas for lean coffee');
+        //    }
+        // });
     });
-    // populate topics for agenda;
-    console.log(a);
 });
 
 controller.hears(['list all topics for agenda (.*)'], 'direct_message,direct_mention,mention', function(bot, message){
-    
+    let agenda = message.match[1].trim();
+    db.find({agendaId:agenda}, function(err, topics) {
+        topics.forEach(function(topic){
+           return bot.reply(message, topic.topic); 
+        }); 
+    });
 });
 
 //shutdown
@@ -145,8 +153,8 @@ controller.hears(['shutdown'], 'direct_message,direct_mention,mention', function
 controller.hears(['uptime', 'identify yourself', 'who are you', 'what is your name'],
     'direct_message,direct_mention,mention', function(bot, message) {
 
-        var hostname = os.hostname();
-        var uptime = formatUptime(process.uptime());
+        let hostname = os.hostname();
+        let uptime = formatUptime(process.uptime());
 
         bot.reply(message,
             ':robot_face: I am a bot named <@' + bot.identity.name +
@@ -155,7 +163,7 @@ controller.hears(['uptime', 'identify yourself', 'who are you', 'what is your na
 
 
 function formatUptime(uptime) {
-    var unit = 'second';
+    let unit = 'second';
     if (uptime > 60) {
         uptime = uptime / 60;
         unit = 'minute';
@@ -174,6 +182,6 @@ function formatUptime(uptime) {
 
 function validDate(date)
 {
-    var formats = [moment.ISO_8601, "MM/DD/YYYY"];
+    let formats = [moment.ISO_8601, "MM/DD/YYYY"];
     return moment(date, formats, true).isValid();
 }
