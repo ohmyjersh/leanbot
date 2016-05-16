@@ -7,7 +7,7 @@ if (!process.env.token){
 const Botkit = require('botkit');
 const os = require('os');
 const moment = require('moment');
-const db = require('./db/db')
+const db = require('./db/db');
  
 const controller = Botkit.slackbot({
    debug: false
@@ -71,25 +71,42 @@ controller.hears(['for agenda (.*) add new topic (.*)'],'direct_message,direct_m
 controller.hears(['for agenda (.*) vote for topic (.*)'],'direct_message,direct_mention,mention', function(bot, message) {
     let agendaId = message.match[1].trim();
     let topicId = message.match[2].trim();
-        
-    //need to get the agenda by id or agenda ?     
-    db.findOne({_id:topicId}, function (err, doc) {
-        if(doc.agendaId != agendaId)
-            return bot.reply(message, 'agenda not found and topic not found');
-        db.update({ _id: doc._id }, { $addToSet: { votes: message.user } }, {}, function (err, result) {
-           if(err)
-                return bot.reply(message, 'uh Oh something went wrong.');
-           if(result == 1)
-                return bot.reply(message, 'Voted!');
+    
+
+    var list = db.find({agendaId:agendaId}, function(err, docs){
+        var count = 0;
+        docs.map(function(topic){
+           topic.votes.map(function(vote){
+               if(vote == message.user)
+                    count++;
+           }); 
+        });
+        if(count > 3)
+            return bot.reply(message, 'You have voted too many times for this agenda, Bryan Joseph');
+        db.findOne({_id:topicId}, function (err, doc) {
+            if(doc.agendaId != agendaId)
+                return bot.reply(message, 'agenda not found and topic not found');
+            db.update({ _id: doc._id }, { $addToSet: { votes: message.user } }, {}, function (err, result) {
+            if(err)
+                    return bot.reply(message, 'uh Oh something went wrong.');
+            if(result == 1)
+                    return bot.reply(message, 'Voted!');
+            });
         });
     });
 });
 
 // list all agendas 
 controller.hears(['list all agendas'],'direct_message,direct_mention,mention', function(bot, message) {
-    db.find({}, function (err, docs) {
+    var a = [];
+    db.find({ type: 'agenda' }, function (err, docs) {
         console.log(docs);
+        a = docs;
+    // docs is an array containing documents Mars, Earth, Jupiter
+    // If no document is found, docs is equal to []
     });
+    // populate topics for agenda;
+    console.log(a);
 });
 
 controller.hears(['list all topics for agenda (.*)'], 'direct_message,direct_mention,mention', function(bot, message){
