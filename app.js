@@ -72,7 +72,6 @@ controller.hears(['for agenda (.*) add new topic (.*)'],'direct_message,direct_m
 controller.hears(['for agenda (.*) vote for topic (.*)'],'direct_message,direct_mention,mention', function(bot, message) {
     let agendaId = message.match[1].trim();
     let topicId = message.match[2].trim();
-    
 
     var list = db.find({agendaId:agendaId}, function(err, docs){
         var count = 0;
