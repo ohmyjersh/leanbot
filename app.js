@@ -37,9 +37,7 @@ controller.hears(['create lean coffee on (.*) with agenda (.*)'],'direct_message
     db.insert(event, function (err, newDoc) {
            if(err)
                 return bot.reply(message, 'uh Oh something went wrong.');
-           return bot.reply(message, 'Created lean coffee with id: ' + newDoc._id 
-           + ' with agenda '+ newDoc.agenda 
-           + ' for: ' + newDoc.date);
+           return bot.reply(message, 'Created lean coffee with id: ${newDoc._i} with agenda ${newDoc.agenda} for: ${newDoc.date}');
     });
 });
 
@@ -50,22 +48,19 @@ controller.hears(['for agenda (.*) add new topic (.*)'],'direct_message,direct_m
     
     if(topic.length > 140)
         return bot.reply(message,"That's a long topic, please shorten it.");
-     
-    // need to find all topics with the agendaId to make sure it has not already been created.s
-        
-    var newTopic = 
-    {   agendaId:agendaId,
-        topic: topic,
-        user: message.user,
-        type: 'topic',
-        votes: []
-    };
-    db.insert(newTopic, function (err, newDoc) {
-           if(err)
-                return bot.reply(message, 'uh Oh something went wrong.');
-           return bot.reply(message, 'Created lean coffee topic with id: ' + newDoc._id 
-           + ' for agenda '+ newDoc.agendaId);
-    });
+        let newTopic = 
+        {   agendaId:agendaId,
+            topic: topic,
+            user: message.user,
+            type: 'topic',
+            votes: []
+        };
+        db.insert(newTopic, function (err, newDoc) {
+            if(err)
+                    return bot.reply(message, 'uh Oh something went wrong.');
+            return bot.reply(message, 'Created lean coffee topic with id: ' + newDoc._id 
+            + ' for agenda '+ newDoc.agendaId);
+       });  
 });
 
 // vote for ideas for lean talk
@@ -73,18 +68,18 @@ controller.hears(['for agenda (.*) vote for topic (.*)'],'direct_message,direct_
     let agendaId = message.match[1].trim();
     let topicId = message.match[2].trim();
 
-    var list = db.find({agendaId:agendaId}, function(err, docs){
+    db.find({agendaId:agendaId}, function(err, docs){
         var count = 0;
         docs.map(function(topic){
            topic.votes.map(function(vote){
-               if(vote == message.user)
+               if(vote === message.user)
                     count++;
            }); 
         });
         if(count > 3)
             return bot.reply(message, 'You have voted too many times for this agenda, Bryan Joseph');
         db.findOne({_id:topicId}, function (err, doc) {
-            if(doc.agendaId != agendaId)
+            if(doc.agendaId !== agendaId)
                 return bot.reply(message, 'agenda not found and topic not found');
             db.update({ _id: doc._id }, { $addToSet: { votes: message.user } }, {}, function (err, result) {
             if(err)
@@ -96,8 +91,54 @@ controller.hears(['for agenda (.*) vote for topic (.*)'],'direct_message,direct_
     });
 });
 
+controller.hears(['next agenda?'], 'direct_message,direct_mention,mention', function(bot, message){
+      bot.startConversation(message,function(err,convo) {
+    console.log('grabbing agenda');
+    // var agenda;
+    // db.find({ type: 'agenda' }, function (err, docs) { 
+    //     var sorted = sortByDate(docs);
+    //     agenda = sorted[0];
+    //     bot.say(message, sorted[0].agenda);
+    // });
+        
+    convo.ask('Would you like to CREATE or VOTE for a topic?',[
+      {
+        pattern: 'CREATE',
+        callback: function(response,convo) {
+          convo.say('What is the topic you want to create?');
+          console.log('creating topic');
+          // do something else...
+          convo.next();
+
+        }
+      },
+      {
+        pattern: 'VOTE',
+        callback: function(response,convo) {
+          convo.say('List Votes');
+          console.log('listing votes');
+          // do something else...
+          convo.next();
+
+        }
+      },
+      {
+        default: true,
+        callback: function(response,convo) {
+          // just repeat the question
+          convo.repeat();
+          convo.next();
+        }
+      }
+    ]);
+  });
+});
+
+
+
 // list all agendas 
 controller.hears(['list all agendas'],'direct_message,direct_mention,mention', function(bot, message) {
+    var things = [];
     db.find({ type: 'agenda' }, function (err, docs) {
         // should filter the docs instead, to make less shitty.
         // docs.forEach(function(doc){
@@ -108,7 +149,9 @@ controller.hears(['list all agendas'],'direct_message,direct_mention,mention', f
         //        return bot.reply(message, 'there is no current agendas for lean coffee');
         //    }
         // });
+        things = docs;
     });
+    console.log(things);
 });
 
 controller.hears(['list all topics for agenda (.*)'], 'direct_message,direct_mention,mention', function(bot, message){
@@ -151,7 +194,6 @@ controller.hears(['shutdown'], 'direct_message,direct_mention,mention', function
 
 controller.hears(['uptime', 'identify yourself', 'who are you', 'what is your name'],
     'direct_message,direct_mention,mention', function(bot, message) {
-
         let hostname = os.hostname();
         let uptime = formatUptime(process.uptime());
 
@@ -183,4 +225,10 @@ function validDate(date)
 {
     let formats = [moment.ISO_8601, "MM/DD/YYYY"];
     return moment(date, formats, true).isValid();
+}
+
+function sortByDate(unsorted) {
+   return unsorted.sort(function(a,b){
+        return new Date(b.date) - new Date(a.date);
+    });
 }
