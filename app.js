@@ -21,6 +21,8 @@ var bot = controller.spawn({
 controller.hears(['create lean coffee on (.*) with agenda (.*)'],'direct_message,direct_mention,mention', function(bot, message) {
     let date = message.match[1].trim();
     let agenda = message.match[2].trim();
+    if(!containsWhiteSpace(agenda))
+        return bot.reply(message, "That seems kind of short, try again and add some more details");
     if(!validDate(date))
         return bot.reply(message,"That's not a valid date, reformat to 12/12/2099");
     if(agenda.length > 140)
@@ -48,19 +50,23 @@ controller.hears(['for agenda (.*) add new topic (.*)'],'direct_message,direct_m
     
     if(topic.length > 140)
         return bot.reply(message,"That's a long topic, please shorten it.");
-        let newTopic = 
-        {   agendaId:agendaId,
-            topic: topic,
-            user: message.user,
-            type: 'topic',
-            votes: []
-        };
-        db.insert(newTopic, function (err, newDoc) {
-            if(err)
-                    return bot.reply(message, 'uh Oh something went wrong.');
-            return bot.reply(message, 'Created lean coffee topic with id: ' + newDoc._id 
-            + ' for agenda '+ newDoc.agendaId);
-       });  
+        
+    if(!containsWhiteSpace(topic))
+        return bot.reply(message, "That seems kind of short, try again and add some more details");
+        
+    let newTopic = 
+    {   agendaId:agendaId,
+        topic: topic,
+        user: message.user,
+        type: 'topic',
+        votes: []
+    };
+    db.insert(newTopic, function (err, newDoc) {
+        if(err)
+                return bot.reply(message, 'uh Oh something went wrong.');
+        return bot.reply(message, 'Created lean coffee topic with id: ' + newDoc._id 
+        + ' for agenda '+ newDoc.agendaId);
+    });  
 });
 
 // vote for ideas for lean talk
@@ -203,6 +209,22 @@ controller.hears(['uptime', 'identify yourself', 'who are you', 'what is your na
     });
 
 
+    //   var helpText = [
+    //     "Here's what I know about chores...",
+    //     '```',
+    //     '"show chores" - List all of the chores currently available to be assigned',
+    //     '"show assigned chores" - List all of the chores currently assigned to someone',
+    //     '"show available chores" - List all of chores available for assignment',
+    //     '"reset chores" - Make all chores available for assignment',
+    //     '"reset assigned chores" - Clear any currently assigned chores',
+    //     '"give me a chore" - Request a chore',
+    //     '"done with chore" - Report completion of chore',
+    //     '```'
+    //   ]
+
+      bot.reply(message, helpText.join('\n'))
+
+
 function formatUptime(uptime) {
     let unit = 'second';
     if (uptime > 60) {
@@ -231,4 +253,11 @@ function sortByDate(unsorted) {
    return unsorted.sort(function(a,b){
         return new Date(b.date) - new Date(a.date);
     });
+}
+
+function containsWhiteSpace(str){
+    if (/\s/.test(str)) {
+        return true;
+    }
+    return false;
 }
