@@ -222,7 +222,7 @@ controller.hears(['uptime', 'identify yourself', 'who are you', 'what is your na
     //     '```'
     //   ]
 
-      bot.reply(message, helpText.join('\n'))
+      //bot.reply(message, helpText.join('\n'))
 
 
 function formatUptime(uptime) {
