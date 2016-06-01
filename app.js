@@ -18,7 +18,7 @@ var bot = controller.spawn({
 }).startRTM();
 
 // create lean talk with agenda
-controller.hears(['create lean coffee on (.*) with agenda (.*)'],'direct_message,direct_mention,mention', function(bot, message) {
+controller.hears(['create new for (.*) with agenda (.*)'],'direct_message,direct_mention,mention', function(bot, message) {
     let date = message.match[1].trim();
     let agenda = message.match[2].trim();
     if(!containsWhiteSpace(agenda))
@@ -61,11 +61,11 @@ controller.hears(['for agenda (.*) add new topic (.*)'],'direct_message,direct_m
         type: 'topic',
         votes: []
     };
-    db.insert(newTopic, function (err, newDoc) {
+    db.insert(newTopic, function (err, topic) {
         if(err)
                 return bot.reply(message, 'uh Oh something went wrong.');
-        return bot.reply(message, 'Created lean coffee topic with id: ' + newDoc._id 
-        + ' for agenda '+ newDoc.agendaId);
+        return bot.reply(message, 'Created lean coffee topic with id: ' + topic._id 
+        + ' for agenda '+ topic.agendaId);
     });  
 });
 
@@ -96,51 +96,6 @@ controller.hears(['for agenda (.*) vote for topic (.*)'],'direct_message,direct_
         });
     });
 });
-
-controller.hears(['next agenda?'], 'direct_message,direct_mention,mention', function(bot, message){
-      bot.startConversation(message,function(err,convo) {
-    console.log('grabbing agenda');
-    // var agenda;
-    // db.find({ type: 'agenda' }, function (err, docs) { 
-    //     var sorted = sortByDate(docs);
-    //     agenda = sorted[0];
-    //     bot.say(message, sorted[0].agenda);
-    // });
-        
-    convo.ask('Would you like to CREATE or VOTE for a topic?',[
-      {
-        pattern: 'CREATE',
-        callback: function(response,convo) {
-          convo.say('What is the topic you want to create?');
-          console.log('creating topic');
-          // do something else...
-          convo.next();
-
-        }
-      },
-      {
-        pattern: 'VOTE',
-        callback: function(response,convo) {
-          convo.say('List Votes');
-          console.log('listing votes');
-          // do something else...
-          convo.next();
-
-        }
-      },
-      {
-        default: true,
-        callback: function(response,convo) {
-          // just repeat the question
-          convo.repeat();
-          convo.next();
-        }
-      }
-    ]);
-  });
-});
-
-
 
 // list all agendas 
 controller.hears(['list all agendas'],'direct_message,direct_mention,mention', function(bot, message) {
@@ -197,8 +152,8 @@ controller.hears(['shutdown'], 'direct_message,direct_mention,mention', function
     });
 });
 
-
 controller.hears(['uptime', 'identify yourself', 'who are you', 'what is your name'],
+
     'direct_message,direct_mention,mention', function(bot, message) {
         let hostname = os.hostname();
         let uptime = formatUptime(process.uptime());
@@ -208,22 +163,22 @@ controller.hears(['uptime', 'identify yourself', 'who are you', 'what is your na
              '>. I have been running for ' + uptime + ' on ' + hostname + '.');
     });
 
+controller.hears([''], 'direct_message','direct_mention','mention', function(bot, message){
+        var helpText = [
+        "Lean bot commands and responses",
+        '```',
+        '"create new for {date} with agenda {agenda}" - Creates new agenda for a given date.  - returns id, agenda, and date',
+        '"for agenda {agenda || agendaId} add new topic {topic}" - Adds new topic for given agenda - return id, topic, and agendaId',
+        '"for {agenda || agendaId} vote for topic {topic || topicId}" - returns voted!',
+        '"list all agendas" - Lists all available agendas - returns agendas',
+        '"list all topics for agenda {agenda || agendaId}" - Lists all topics for agenda - returns topics for agenda',
+        '"uptime" - How long has the bot been up',
+        '"shutdown" - shutdowns lean bot',
+        '```'
+      ];
 
-    //   var helpText = [
-    //     "Here's what I know about chores...",
-    //     '```',
-    //     '"show chores" - List all of the chores currently available to be assigned',
-    //     '"show assigned chores" - List all of the chores currently assigned to someone',
-    //     '"show available chores" - List all of chores available for assignment',
-    //     '"reset chores" - Make all chores available for assignment',
-    //     '"reset assigned chores" - Clear any currently assigned chores',
-    //     '"give me a chore" - Request a chore',
-    //     '"done with chore" - Report completion of chore',
-    //     '```'
-    //   ]
-
-      //bot.reply(message, helpText.join('\n'))
-
+      bot.reply(message, helpText.join('\n'));
+});
 
 function formatUptime(uptime) {
     let unit = 'second';
