@@ -13,7 +13,7 @@ const controller = Botkit.slackbot({
    debug: false
 });
 
-var bot = controller.spawn({
+let bot = controller.spawn({
    token: process.env.token 
 }).startRTM();
 
@@ -29,7 +29,7 @@ controller.hears(['create new for (.*) with agenda (.*)'],'direct_message,direct
         return bot.reply(message,"That's a long agenda, please shorten it.");
     // check if agenda already exists
     
-    var event = 
+    let event = 
     {
         agenda:agenda,
         user:message.user,
@@ -75,7 +75,7 @@ controller.hears(['for agenda (.*) vote for topic (.*)'],'direct_message,direct_
     let topicId = message.match[2].trim();
 
     db.find({agendaId:agendaId}, function(err, docs){
-        var count = 0;
+        let count = 0;
         docs.map(function(topic){
            topic.votes.map(function(vote){
                if(vote === message.user)
@@ -99,11 +99,11 @@ controller.hears(['for agenda (.*) vote for topic (.*)'],'direct_message,direct_
 
 // list all agendas 
 controller.hears(['list all agendas'],'direct_message,direct_mention,mention', function(bot, message) {
-    var things = [];
+    let things = [];
     db.find({ type: 'agenda' }, function (err, docs) {
         // should filter the docs instead, to make less shitty.
         // docs.forEach(function(doc){
-        //    var result = moment(doc.date).isAfter(moment());
+        //    let result = moment(doc.date).isAfter(moment());
         //    if(moment(doc.date).isAfter(moment()))
         //     return bot.reply(message, doc.agenda); 
         //    else {
@@ -164,20 +164,20 @@ controller.hears(['uptime', 'identify yourself', 'who are you', 'what is your na
     });
 
 controller.hears([''], 'direct_message','direct_mention','mention', function(bot, message){
-        var helpText = [
-        "Lean bot commands and responses",
-        '```',
-        '"create new for {date} with agenda {agenda}" - Creates new agenda for a given date.  - returns id, agenda, and date',
-        '"for agenda {agenda || agendaId} add new topic {topic}" - Adds new topic for given agenda - return id, topic, and agendaId',
-        '"for {agenda || agendaId} vote for topic {topic || topicId}" - returns voted!',
-        '"list all agendas" - Lists all available agendas - returns agendas',
-        '"list all topics for agenda {agenda || agendaId}" - Lists all topics for agenda - returns topics for agenda',
-        '"uptime" - How long has the bot been up',
-        '"shutdown" - shutdowns lean bot',
-        '```'
-      ];
+    let helpText = [
+    "Lean bot commands and responses",
+    '```',
+    '"create new for {date} with agenda {agenda}" - Creates new agenda for a given date.  - returns id, agenda, and date',
+    '"for agenda {agenda || agendaId} add new topic {topic}" - Adds new topic for given agenda - return id, topic, and agendaId',
+    '"for {agenda || agendaId} vote for topic {topic || topicId}" - returns voted!',
+    '"list all agendas" - Lists all available agendas - returns agendas',
+    '"list all topics for agenda {agenda || agendaId}" - Lists all topics for agenda - returns topics for agenda',
+    '"uptime" - How long has the bot been up',
+    '"shutdown" - shutdowns lean bot',
+    '```'
+    ];
 
-      bot.reply(message, helpText.join('\n'));
+    bot.reply(message, helpText.join('\n'));
 });
 
 function formatUptime(uptime) {
