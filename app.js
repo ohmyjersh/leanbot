@@ -17,8 +17,19 @@ let bot = controller.spawn({
    token: process.env.token 
 }).startRTM();
 
+var isAnyNullOrUndefined = function(args) {
+    var result = false;
+    args.map(function(x){
+      if(x == null || undefined)
+        {result = true;}
+    });
+    return result;
+};
+
 // create lean talk with agenda
-controller.hears(['create new for (.*) with agenda (.*)'],'direct_message,direct_mention,mention', function(bot, message) {
+controller.hears('for (.*) create new agenda (.*)',['direct_message,direct_mention,mention'], function(bot, message) {
+    if(isAnyNullOrUndefined(message.match))
+        return bot.reply(message, "I don't understand, try asking me for help");
     let date = message.match[1].trim();
     let agenda = message.match[2].trim();
     if(!containsWhiteSpace(agenda))
@@ -44,7 +55,7 @@ controller.hears(['create new for (.*) with agenda (.*)'],'direct_message,direct
 });
 
 // add topic for lean coffee
-controller.hears(['for agenda (.*) add new topic (.*)'],'direct_message,direct_mention,mention', function(bot, message) {
+controller.hears('for agenda (.*) add new topic (.*)',['direct_message,direct_mention,mention'], function(bot, message) {
     let agendaId = message.match[1].trim();
     let topic = message.match[2].trim();
     
@@ -70,7 +81,7 @@ controller.hears(['for agenda (.*) add new topic (.*)'],'direct_message,direct_m
 });
 
 // vote for ideas for lean talk
-controller.hears(['for agenda (.*) vote for topic (.*)'],'direct_message,direct_mention,mention', function(bot, message) {
+controller.hears('for agenda (.*) vote for topic (.*)',['direct_message,direct_mention,mention'], function(bot, message) {
     let agendaId = message.match[1].trim();
     let topicId = message.match[2].trim();
 
@@ -98,7 +109,7 @@ controller.hears(['for agenda (.*) vote for topic (.*)'],'direct_message,direct_
 });
 
 // list all agendas 
-controller.hears(['list all agendas'],'direct_message,direct_mention,mention', function(bot, message) {
+controller.hears('list all agendas',['direct_message,direct_mention,mention'], function(bot, message) {
     let things = [];
     db.find({ type: 'agenda' }, function (err, docs) {
         // should filter the docs instead, to make less shitty.
@@ -115,7 +126,7 @@ controller.hears(['list all agendas'],'direct_message,direct_mention,mention', f
     console.log(things);
 });
 
-controller.hears(['list all topics for agenda (.*)'], 'direct_message,direct_mention,mention', function(bot, message){
+controller.hears('list all topics for agenda (.*)',['direct_message,direct_mention,mention'], function(bot, message){
     let agenda = message.match[1].trim();
     db.find({agendaId:agenda}, function(err, topics) {
         topics.forEach(function(topic){
@@ -125,7 +136,7 @@ controller.hears(['list all topics for agenda (.*)'], 'direct_message,direct_men
 });
 
 //shutdown
-controller.hears(['shutdown'], 'direct_message,direct_mention,mention', function(bot, message) {
+controller.hears('shutdown', ['direct_message,direct_mention,mention'], function(bot, message) {
     console.log('heard it');
     bot.startConversation(message, function(err, convo) {
 
@@ -152,8 +163,7 @@ controller.hears(['shutdown'], 'direct_message,direct_mention,mention', function
     });
 });
 
-controller.hears(['uptime', 'identify yourself', 'who are you', 'what is your name'],
-
+controller.hears('uptime', ['identify yourself', 'who are you', 'what is your name'],
     'direct_message,direct_mention,mention', function(bot, message) {
         let hostname = os.hostname();
         let uptime = formatUptime(process.uptime());
@@ -163,7 +173,7 @@ controller.hears(['uptime', 'identify yourself', 'who are you', 'what is your na
              '>. I have been running for ' + uptime + ' on ' + hostname + '.');
     });
 
-controller.hears([''], 'direct_message','direct_mention','mention', function(bot, message){
+controller.hears('help', ['direct_message','direct_mention','mention'], function(bot, message){
     let helpText = [
     "Lean bot commands and responses",
     '```',
