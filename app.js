@@ -17,19 +17,8 @@ let bot = controller.spawn({
    token: process.env.token 
 }).startRTM();
 
-var isAnyNullOrUndefined = function(args) {
-    var result = false;
-    args.map(function(x){
-      if(x == null || undefined)
-        {result = true;}
-    });
-    return result;
-};
-
 // create lean talk with agenda
 controller.hears('for (.*) create new agenda (.*)',['direct_message,direct_mention,mention'], function(bot, message) {
-    if(isAnyNullOrUndefined(message.match))
-        return bot.reply(message, "I don't understand, try asking me for help");
     let date = message.match[1].trim();
     let agenda = message.match[2].trim();
     if(!containsWhiteSpace(agenda))
@@ -44,14 +33,22 @@ controller.hears('for (.*) create new agenda (.*)',['direct_message,direct_menti
     {
         agenda:agenda,
         user:message.user,
+        channel:message.channel,
         type: 'agenda',
         date: moment().format(date),
     };
-    db.insert(event, function (err, newDoc) {
+    
+   db.find({ type: 'agenda', agenda:agenda }, function (err, docs) {
+      if(docs.length >= 1)
+        return bot.reply(message, 'Agenda already exists, try a new one.');
+      else {
+          db.insert(event, function (err, newDoc) {
            if(err)
                 return bot.reply(message, 'uh Oh something went wrong.');
-           return bot.reply(message, 'Created lean coffee with id: ${newDoc._i} with agenda ${newDoc.agenda} for: ${newDoc.date}');
-    });
+            });    
+            return bot.reply(message, `Created lean coffee with id: ${newDoc._id} with agenda ${newDoc.agenda} for: ${newDoc.date}`);
+        } 
+   });
 });
 
 // add topic for lean coffee
@@ -74,9 +71,8 @@ controller.hears('for agenda (.*) add new topic (.*)',['direct_message,direct_me
     };
     db.insert(newTopic, function (err, topic) {
         if(err)
-                return bot.reply(message, 'uh Oh something went wrong.');
-        return bot.reply(message, 'Created lean coffee topic with id: ' + topic._id 
-        + ' for agenda '+ topic.agendaId);
+            return bot.reply(message, 'uh Oh something went wrong.');
+        return bot.reply(message, `Created lean coffee topic with id: ${topic._id} for agenda ${topic.agendaId}`);
     });  
 });
 
@@ -94,7 +90,7 @@ controller.hears('for agenda (.*) vote for topic (.*)',['direct_message,direct_m
            }); 
         });
         if(count > 3)
-            return bot.reply(message, 'You have voted too many times for this agenda, Bryan Joseph');
+            return bot.reply(message, 'You have voted too many times for this agenda');
         db.findOne({_id:topicId}, function (err, doc) {
             if(doc.agendaId !== agendaId)
                 return bot.reply(message, 'agenda not found and topic not found');
@@ -110,32 +106,33 @@ controller.hears('for agenda (.*) vote for topic (.*)',['direct_message,direct_m
 
 // list all agendas 
 controller.hears('list all agendas',['direct_message,direct_mention,mention'], function(bot, message) {
-    let things = [];
     db.find({ type: 'agenda' }, function (err, docs) {
-        // should filter the docs instead, to make less shitty.
-        // docs.forEach(function(doc){
-        //    let result = moment(doc.date).isAfter(moment());
-        //    if(moment(doc.date).isAfter(moment()))
-        //     return bot.reply(message, doc.agenda); 
-        //    else {
-        //        return bot.reply(message, 'there is no current agendas for lean coffee');
-        //    }
-        // });
-        things = docs;
+        if(docs.length > 0) {
+            let result = [];
+            docs.map(function(x){
+               result.push(x); 
+            });
+            var formatResponse = formatString(result);
+            return bot.reply(message, formatResponse);
+        }
+        else if (docs === null || docs === undefined) {
+            return bot.reply(message, 'no agendas');
+        }
     });
-    console.log(things);
 });
 
 controller.hears('list all topics for agenda (.*)',['direct_message,direct_mention,mention'], function(bot, message){
     let agenda = message.match[1].trim();
     db.find({agendaId:agenda}, function(err, topics) {
-        topics.forEach(function(topic){
-           return bot.reply(message, topic.topic); 
-        }); 
+            let result = [];
+            topics.forEach(function(x){
+               result.push(`id: ${x._id} - ${x.topic}`); 
+            });
+            var formatResponse = formatString(result);
+            return bot.reply(message, formatResponse);
     });
 });
 
-//shutdown
 controller.hears('shutdown', ['direct_message,direct_mention,mention'], function(bot, message) {
     console.log('heard it');
     bot.startConversation(message, function(err, convo) {
@@ -175,19 +172,16 @@ controller.hears('uptime', ['identify yourself', 'who are you', 'what is your na
 
 controller.hears('help', ['direct_message','direct_mention','mention'], function(bot, message){
     let helpText = [
-    "Lean bot commands and responses",
-    '```',
-    '"create new for {date} with agenda {agenda}" - Creates new agenda for a given date.  - returns id, agenda, and date',
-    '"for agenda {agenda || agendaId} add new topic {topic}" - Adds new topic for given agenda - return id, topic, and agendaId',
-    '"for {agenda || agendaId} vote for topic {topic || topicId}" - returns voted!',
-    '"list all agendas" - Lists all available agendas - returns agendas',
-    '"list all topics for agenda {agenda || agendaId}" - Lists all topics for agenda - returns topics for agenda',
-    '"uptime" - How long has the bot been up',
-    '"shutdown" - shutdowns lean bot',
-    '```'
+    'for {date} create new agenda {agenda} - Creates new agenda for a given date.',
+    'for agenda {agendaId} add new topic {topic} - Adds new topic for given agenda',
+    'for {agendaId} vote for topic {topicId} - Vote for topic for agenda',
+    'list all agendas - Lists all available agendas',
+    'list all topics for agenda {agendaId} - Lists all topics for agenda',
+    'uptime - How long has the bot been up',
+    'shutdown - Shutdown the lean bot'
     ];
-
-    bot.reply(message, helpText.join('\n'));
+    var formatResponse = formatString(helpText);
+    return bot.reply(message, formatResponse);
 });
 
 function formatUptime(uptime) {
@@ -225,4 +219,9 @@ function containsWhiteSpace(str){
         return true;
     }
     return false;
+}
+
+function formatString(result)
+{
+     return '```' + result.join('\n') + '```';
 }
