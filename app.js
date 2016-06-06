@@ -271,3 +271,9 @@ function formatString(result)
 {
      return '```' + result.join('\n') + '```';
 }
+
+
+function sendReply(bot, message, text){
+    let result = text ? formatString(text) : 'something happened, check bot logs';
+    bot.reply(message. result);
+}
