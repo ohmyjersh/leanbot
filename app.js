@@ -184,8 +184,28 @@ controller.hears('shutdown', ['direct_message,direct_mention,mention'], function
     });
 });
 
+ //crappy, make better later
+ controller.hears('Delete Topic (.*)', [], function(bot, message) {
+     let topicId = message.match[1].trim();
+     db.remove({ _id: topicId }, {}, function (err, numRemoved) {
+      if(err)
+        console.log('asdf');//do stuff
+    });
+ });
  
- // delete topic {topicId}
+ //crappy, make better later
+ controller.hears('Delete Agenda (.*)', [], function(bot, message) {
+    let agendaId = message.match[1].trim();
+    db.remove({ _id: agendId }, {}, function (err, numRemoved) {
+       if(err)
+        console.log('asdf');//do stuff
+    });
+    db.remove({ agendaIa: agendId }, {}, function (err, numRemoved) {
+      if(err)
+        console.log('asdf');//do stuff
+    });
+ });
+ 
  // delete agenda (deletes all topics associated) {agendaId}
 controller.hears('uptime',
     ['direct_message,direct_mention,mention'], function(bot, message) {
