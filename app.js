@@ -147,7 +147,7 @@ controller.hears('next agenda?', ['direct_message,direct_mention,mention'], func
             if(topics.length > 0)
             {
                 topics.forEach(function(x){
-                results.push(`- ${x.topic} (${x._id})`);
+                results.push(`- (${x._id}) ${x.topic} - (${x.votes.length})`);
                 });
             }
             else {
@@ -183,6 +183,10 @@ controller.hears('shutdown', ['direct_message,direct_mention,mention'], function
         ]);
     });
 });
+
+ 
+ // delete topic {topicId}
+ // delete agenda (deletes all topics associated) {agendaId}
 controller.hears('uptime',
     ['direct_message,direct_mention,mention'], function(bot, message) {
         let hostname = os.hostname();
@@ -195,12 +199,12 @@ controller.hears('uptime',
 controller.hears('help', ['direct_message','direct_mention','mention'], function(bot, message){
     let helpText = [
     'for {date} create new agenda {agenda} - Creates new agenda for a given date.',
-    'for agenda {agendaId} add new topic {topic} - Adds new topic for given agenda',
-    'for {agendaId} vote for topic {topicId} - Vote for topic for agenda',
-    'list all agendas - Lists all available agendas',
-    'list all topics for agenda {agendaId} - Lists all topics for agenda',
-    'uptime - How long has the bot been up',
-    'shutdown - Shutdown the lean bot'
+    'for agenda {agendaId} add new topic {topic} - Adds new topic for given agenda.',
+    'for agenda {agendaId} vote for topic {topicId} - Vote for topic.',
+    'list all agendas - Lists all available agendas.',
+    'list all topics for agenda {agendaId} - Lists all topics for agenda.',
+    'uptime - How long has the bot been up.',
+    'shutdown - Shutdown the lean bot.'
     ];
     var formatResponse = formatString(helpText);
     return bot.reply(message, formatResponse);
