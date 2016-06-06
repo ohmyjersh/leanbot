@@ -111,7 +111,7 @@ controller.hears('list all agendas',['direct_message,direct_mention,mention'], f
             docs.map(function(x){
                result.push(x); 
             });
-            var formatResponse = formatString(result);
+            let formatResponse = formatString(result);
             return bot.reply(message, formatResponse);
         }
         else if (docs === null || docs === undefined) {
@@ -127,20 +127,20 @@ controller.hears('list all topics for agenda (.*)',['direct_message,direct_menti
             topics.forEach(function(x){
                result.push(`${x._id} - ${x.topic}`); 
             });
-            var formatResponse = formatString(result);
+            let formatResponse = formatString(result);
             return bot.reply(message, formatResponse);
     });
 });
 
 
 controller.hears('next agenda?', ['direct_message,direct_mention,mention'], function(bot,message){
-    var results = [];
+    let results = [];
     db.find({type:'agenda'}, function(err, docs){
         if(docs.length == 0)
             return bots.reply(message, 'No Agenda, Add One!');
         
-        var sorted = sortByDate(docs);
-        var first = sorted[0];
+        let sorted = sortByDate(docs);
+        let first = sorted[0];
         results.push(`${first.date} - ${first.agenda} (${first._id})`);
         
         db.find({agendaId:first._id, type:'topic'}, function(err, topics) {
@@ -153,8 +153,7 @@ controller.hears('next agenda?', ['direct_message,direct_mention,mention'], func
             else {
                 results.push('- No Topics, add one!');
             }
-            var formatResponse = formatString(results);
-            return bot.reply(message, formatResponse);
+            sendReply(bot, message, results);
         });
     });
 });
@@ -226,7 +225,7 @@ controller.hears('help', ['direct_message','direct_mention','mention'], function
     'uptime - How long has the bot been up.',
     'shutdown - Shutdown the lean bot.'
     ];
-    var formatResponse = formatString(helpText);
+    let formatResponse = formatString(helpText);
     return bot.reply(message, formatResponse);
 });
 
@@ -272,8 +271,7 @@ function formatString(result)
      return '```' + result.join('\n') + '```';
 }
 
-
 function sendReply(bot, message, text){
     let result = text ? formatString(text) : 'something happened, check bot logs';
-    bot.reply(message. result);
+    return bot.reply(message, result);
 }
