@@ -27,7 +27,6 @@ controller.hears('for (.*) create new agenda (.*)',['direct_message,direct_menti
         return bot.reply(message,"That's not a valid date, reformat to 12/12/2099");
     if(agenda.length > 140)
         return bot.reply(message,"That's a long agenda, please shorten it.");
-    // check if agenda already exists
     
     let event = 
     {
@@ -39,7 +38,7 @@ controller.hears('for (.*) create new agenda (.*)',['direct_message,direct_menti
     };
     
    db.find({ type: 'agenda', agenda:agenda }, function (err, docs) {
-      if(docs.length >= 1)
+      if(docs.length > 0)
         return bot.reply(message, 'Agenda already exists, try a new one.');
       else {
           db.insert(event, function (err, newDoc) {
@@ -93,10 +92,10 @@ controller.hears('for agenda (.*) vote for topic (.*)',['direct_message,direct_m
             return bot.reply(message, 'You have voted too many times for this agenda');
         db.findOne({_id:topicId}, function (err, doc) {
             if(doc.agendaId !== agendaId)
-                return bot.reply(message, 'agenda not found and topic not found');
+                return bot.reply(message, 'agendas not found and topic not found');
             db.update({ _id: doc._id }, { $addToSet: { votes: message.user } }, {}, function (err, result) {
             if(err)
-                    return bot.reply(message, 'uh Oh something went wrong.');
+                    return bot.reply(message, 'Uh Oh something went wrong.');
             if(result == 1)
                     return bot.reply(message, 'Voted!');
             });
@@ -126,17 +125,42 @@ controller.hears('list all topics for agenda (.*)',['direct_message,direct_menti
     db.find({agendaId:agenda}, function(err, topics) {
             let result = [];
             topics.forEach(function(x){
-               result.push(`id: ${x._id} - ${x.topic}`); 
+               result.push(`${x._id} - ${x.topic}`); 
             });
             var formatResponse = formatString(result);
             return bot.reply(message, formatResponse);
     });
 });
 
-controller.hears('shutdown', ['direct_message,direct_mention,mention'], function(bot, message) {
-    console.log('heard it');
-    bot.startConversation(message, function(err, convo) {
 
+controller.hears('next agenda?', ['direct_message,direct_mention,mention'], function(bot,message){
+    var results = [];
+    db.find({type:'agenda'}, function(err, docs){
+        if(docs.length == 0)
+            return bots.reply(message, 'No Agenda, Add One!');
+        
+        var sorted = sortByDate(docs);
+        var first = sorted[0];
+        results.push(`${first.date} - ${first.agenda} (${first._id})`);
+        
+        db.find({agendaId:first._id, type:'topic'}, function(err, topics) {
+            if(topics.length > 0)
+            {
+                topics.forEach(function(x){
+                results.push(`- ${x.topic} (${x._id})`);
+                });
+            }
+            else {
+                results.push('- No Topics, add one!');
+            }
+            var formatResponse = formatString(results);
+            return bot.reply(message, formatResponse);
+        });
+    });
+});
+
+controller.hears('shutdown', ['direct_message,direct_mention,mention'], function(bot, message) {
+    bot.startConversation(message, function(err, convo) {
         convo.ask('Are you sure you want me to shutdown?', [
             {
                 pattern: bot.utterances.yes,
@@ -159,16 +183,14 @@ controller.hears('shutdown', ['direct_message,direct_mention,mention'], function
         ]);
     });
 });
-
-controller.hears('uptime', ['identify yourself', 'who are you', 'what is your name'],
-    'direct_message,direct_mention,mention', function(bot, message) {
+controller.hears('uptime',
+    ['direct_message,direct_mention,mention'], function(bot, message) {
         let hostname = os.hostname();
         let uptime = formatUptime(process.uptime());
-
-        bot.reply(message,
-            ':robot_face: I am a bot named <@' + bot.identity.name +
-             '>. I have been running for ' + uptime + ' on ' + hostname + '.');
+        console.log('here');
+        return bot.reply(message, `:robot_face: I am a bot named @${bot.identity.name} - I have been running for ${uptime} on ${hostname}.`);
     });
+
 
 controller.hears('help', ['direct_message','direct_mention','mention'], function(bot, message){
     let helpText = [
